@@ -22,11 +22,13 @@ st.set_page_config(
 # MODEL SETTINGS
 # =========================================================
 
+# GitHub Release se AI model download hoga
 MODEL_URL = (
     "https://github.com/hassnainbilal/chest-xray-app/"
     "releases/download/v1.0.0/chest_xray_cnn_model_best.keras"
 )
 
+# Model temporary/local app folder mein save hoga
 MODEL_PATH = Path(__file__).parent / "chest_xray_cnn_model_best.keras"
 
 
@@ -42,20 +44,14 @@ def download_model():
     st.info("Downloading AI model from GitHub Release...")
 
     try:
-
         urllib.request.urlretrieve(
             MODEL_URL,
             str(MODEL_PATH)
         )
 
     except Exception as e:
-
         st.error("Unable to download the AI model.")
-
-        st.code(
-            str(e)
-        )
-
+        st.code(str(e))
         st.stop()
 
 
@@ -69,7 +65,6 @@ def load_model():
     download_model()
 
     try:
-
         model = tf.keras.models.load_model(
             str(MODEL_PATH),
             compile=False
@@ -78,11 +73,8 @@ def load_model():
         return model
 
     except Exception as e:
-
         st.error("Unable to load the AI model.")
-
         st.exception(e)
-
         st.stop()
 
 
@@ -92,24 +84,19 @@ def load_model():
 
 def preprocess_image(image):
 
-    # Convert image to RGB
     image = image.convert("RGB")
 
-    # Resize to model input size
     image = image.resize(
         (224, 224)
     )
 
-    # Convert image to NumPy array
     image_array = np.asarray(
         image,
         dtype=np.float32
     )
 
-    # Normalize pixels
     image_array = image_array / 255.0
 
-    # Add batch dimension
     image_array = np.expand_dims(
         image_array,
         axis=0
@@ -144,94 +131,42 @@ def predict_image(image):
 
 def extract_prediction_value(prediction):
 
-    """
-    Converts different TensorFlow/Keras prediction
-    formats into a single numeric value.
-
-    Handles:
-        scalar
-        [value]
-        [[value]]
-        multiple prediction values
-    """
-
-    # -----------------------------------------------------
-    # If model returns a list/tuple of outputs
-    # -----------------------------------------------------
-
     if isinstance(
         prediction,
         (list, tuple)
     ):
 
         if len(prediction) == 0:
-
             raise ValueError(
                 "The model returned an empty prediction."
             )
 
-        # Use the first model output
         prediction = prediction[0]
-
-    # -----------------------------------------------------
-    # Convert TensorFlow tensor / NumPy object
-    # -----------------------------------------------------
 
     array = np.asarray(
         prediction
     )
 
-    # -----------------------------------------------------
-    # Remove dimensions of size 1
-    # -----------------------------------------------------
-
     array = np.squeeze(
         array
     )
 
-    # -----------------------------------------------------
-    # Scalar
-    # -----------------------------------------------------
-
     if array.ndim == 0:
-
         return float(
             array.item()
         )
 
-    # -----------------------------------------------------
-    # Single value
-    # -----------------------------------------------------
-
     if array.size == 1:
-
         return float(
             array.reshape(-1)[0]
         )
 
-    # -----------------------------------------------------
-    # Multiple values
-    # -----------------------------------------------------
-
     flat_array = array.reshape(-1)
 
-    # If this is a probability output,
-    # use the last probability for binary classification.
-    #
-    # Example:
-    # [0.20, 0.80]
-    #
-    # 0.80 = positive probability
-
     if flat_array.size == 2:
-
         return float(
             flat_array[1]
         )
-
-    # -----------------------------------------------------
-    # For any other multi-value output
-    # -----------------------------------------------------
 
     return float(
         np.max(flat_array)
@@ -309,17 +244,9 @@ if uploaded_file:
 
             try:
 
-                # -----------------------------------------
-                # Get raw model prediction
-                # -----------------------------------------
-
                 prediction = predict_image(
                     image
                 )
-
-                # -----------------------------------------
-                # Convert prediction safely
-                # -----------------------------------------
 
                 value = extract_prediction_value(
                     prediction
@@ -331,19 +258,15 @@ if uploaded_file:
                     "An error occurred while making the prediction."
                 )
 
-                # Show useful debugging information
                 st.write(
                     "Prediction type:"
                 )
 
                 try:
-
                     st.code(
                         str(type(prediction))
                     )
-
                 except:
-
                     pass
 
                 try:
@@ -361,7 +284,6 @@ if uploaded_file:
                     )
 
                 except:
-
                     pass
 
                 st.exception(
@@ -377,10 +299,6 @@ if uploaded_file:
 
         if 0 <= value <= 1:
 
-            # ---------------------------------------------
-            # Positive / Abnormal
-            # ---------------------------------------------
-
             if value >= 0.5:
 
                 label = (
@@ -388,10 +306,6 @@ if uploaded_file:
                 )
 
                 confidence = value
-
-            # ---------------------------------------------
-            # Negative / Normal
-            # ---------------------------------------------
 
             else:
 
@@ -402,9 +316,9 @@ if uploaded_file:
                 confidence = 1 - value
 
 
-            # ---------------------------------------------
+            # =================================================
             # RESULT
-            # ---------------------------------------------
+            # =================================================
 
             if value >= 0.5:
 
